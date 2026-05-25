@@ -32,6 +32,12 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
     private var currentSelectedFileIcons: [String] = []
     private var currentNetworkIcons: [String] = []
     private var currentSelectedNetworkIcons: [String] = []
+
+    // new feature
+    private var currentSelectedSymbols: [String] = []
+    private var currentIconSizes: [CGFloat] = []
+    private var currentSelectedIconSizes: [CGFloat] = []
+
     private var currentSearchFlags: [Bool] = []
     private var currentBadgeCounts: [Int?] = []
     private let imageCache = NSCache<NSString, UIImage>()
@@ -51,6 +57,9 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
         var selectedFileIcons: [String] = []
         var networkIcons: [String] = []
         var selectedNetworkIcons: [String] = []
+        var selectedSymbols: [String] = []
+        var iconSizes: [CGFloat] = []
+        var selectedIconSizes: [CGFloat] = []
         var searchFlags: [Bool] = []
         var badgeCounts: [Int?] = []
         var spacerFlags: [Bool] = []
@@ -73,6 +82,10 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
             selectedFileIcons = (dict["selectedFileIcons"] as? [String]) ?? []
             networkIcons = (dict["networkIcons"] as? [String]) ?? []
             selectedNetworkIcons = (dict["selectedNetworkIcons"] as? [String]) ?? []
+            selectedSymbols = (dict["selectedSfSymbols"] as? [String]) ?? symbols
+            iconSizes = (dict["iconSizes"] as? [CGFloat]) ?? []
+            selectedIconSizes = (dict["selectedIconSizes"] as? [CGFloat]) ?? []
+
             searchFlags = (dict["searchFlags"] as? [Bool]) ?? []
             spacerFlags = (dict["spacerFlags"] as? [Bool]) ?? []
             if let badgeData = dict["badgeCounts"] as? [NSNumber?] {
@@ -219,7 +232,7 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
                             }
 
                             if #available(iOS 26.0, *) {
-                                if let unselTint = unselectedTint {
+                                if let unselTint = bar.unselectedItemTintColor {
                                     image = rawImage?.withTintColor(unselTint, renderingMode: .alwaysOriginal)
                                 } else {
                                     image = rawImage?.withRenderingMode(.alwaysTemplate)
@@ -229,26 +242,53 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
                                 image = rawImage
                                 selectedImage = selRawImage
                             }
-                        } else if i < symbols.count && !symbols[i].isEmpty {
-                            // iOS 26+: Use different rendering modes for selected/unselected
-                            if #available(iOS 26.0, *) {
-                                // Unselected: Only apply custom color if unselectedTint is provided
-                                if let unselTint = unselectedTint {
-                                    // Create colored image for unselected state
-                                    if let originalImage = UIImage(systemName: symbols[i]) {
-                                        image = originalImage.withTintColor(unselTint, renderingMode: .alwaysOriginal)
-                                    }
-                                } else {
-                                    // No custom color - use template mode to respect theme
-                                    image = UIImage(systemName: symbols[i])?.withRenderingMode(.alwaysTemplate)
-                                }
+                        // } else if i < symbols.count && !symbols[i].isEmpty {
+                        //     // iOS 26+: Use different rendering modes for selected/unselected
+                        //     if #available(iOS 26.0, *) {
+                        //         // Unselected: Only apply custom color if unselectedTint is provided
+                        //         if let unselTint = unselectedTint {
+                        //             // Create colored image for unselected state
+                        //             if let originalImage = UIImage(systemName: symbols[i]) {
+                        //                 image = originalImage.withTintColor(unselTint, renderingMode: .alwaysOriginal)
+                        //             }
+                        //         } else {
+                        //             // No custom color - use template mode to respect theme
+                        //             image = UIImage(systemName: symbols[i])?.withRenderingMode(.alwaysTemplate)
+                        //         }
 
-                                // Selected: Use template rendering so tintColor applies
-                                selectedImage = UIImage(systemName: symbols[i])?.withRenderingMode(.alwaysTemplate)
+                        //         // Selected: Use template rendering so tintColor applies
+                        //         selectedImage = UIImage(systemName: symbols[i])?.withRenderingMode(.alwaysTemplate)
+                        //     } else {
+                        //         // iOS <26: Use default behavior
+                        //         image = UIImage(systemName: symbols[i])
+                        //         selectedImage = image
+                        //     }
+                        // }
+
+                        } else if i < symbols.count && !symbols[i].isEmpty {
+                            let normalSize  = (i < self.currentIconSizes.count) ? self.currentIconSizes[i] : 24.0
+                            let activeSize  = (i < self.currentSelectedIconSizes.count) ? self.currentSelectedIconSizes[i] : 28.0
+                            let normalSymbol   = symbols[i]
+                            let activeSymbol   = (i < self.currentSelectedSymbols.count && !self.currentSelectedSymbols[i].isEmpty)
+                                                ? self.currentSelectedSymbols[i] : normalSymbol
+
+                            if #available(iOS 26.0, *) {
+                                let normalConfig = UIImage.SymbolConfiguration(pointSize: normalSize, weight: .regular)
+                                let activeConfig = UIImage.SymbolConfiguration(pointSize: activeSize, weight: .bold)
+
+                                if let unselTint = bar.unselectedItemTintColor {
+                                    image = UIImage(systemName: normalSymbol, withConfiguration: normalConfig)?
+                                        .withTintColor(unselTint, renderingMode: .alwaysOriginal)
+                                } else {
+                                    image = UIImage(systemName: normalSymbol, withConfiguration: normalConfig)?
+                                        .withRenderingMode(.alwaysTemplate)
+                                }
+                                selectedImage = UIImage(systemName: activeSymbol, withConfiguration: activeConfig)?
+                                    .withRenderingMode(.alwaysTemplate)
                             } else {
-                                // iOS <26: Use default behavior
-                                image = UIImage(systemName: symbols[i])
-                                selectedImage = image
+                                let normalConfig = UIImage.SymbolConfiguration(pointSize: normalSize, weight: .regular)
+                                image = UIImage(systemName: normalSymbol, withConfiguration: normalConfig)
+                                selectedImage = UIImage(systemName: activeSymbol, withConfiguration: normalConfig)
                             }
                         }
 
@@ -301,6 +341,11 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
         self.currentSelectedFileIcons = selectedFileIcons
         self.currentNetworkIcons = networkIcons
         self.currentSelectedNetworkIcons = selectedNetworkIcons
+        self.currentSelectedSymbols = selectedSymbols
+        self.currentIconSizes = iconSizes
+        self.currentSelectedIconSizes = selectedIconSizes
+
+
         self.currentSearchFlags = searchFlags
         self.currentBadgeCounts = badgeCounts
         // Apply minimize behavior if available
@@ -448,28 +493,55 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
                                     image = rawImage
                                     selectedImage = selRawImage
                                 }
+                            // } else if i < symbols.count && !symbols[i].isEmpty {
+                            //     // iOS 26+: Use different rendering modes for selected/unselected
+                            //     if #available(iOS 26.0, *) {
+                            //         // Get current unselected color from tab bar
+                            //         let unselTint = self.tabBar?.unselectedItemTintColor
+
+                            //         // Unselected: Only apply custom color if unselectedTint is set
+                            //         if let unselTint = unselTint {
+                            //             if let originalImage = UIImage(systemName: symbols[i]) {
+                            //                 image = originalImage.withTintColor(unselTint, renderingMode: .alwaysOriginal)
+                            //             }
+                            //         } else {
+                            //             // No custom color - use template mode to respect theme
+                            //             image = UIImage(systemName: symbols[i])?.withRenderingMode(.alwaysTemplate)
+                            //         }
+
+                            //         // Selected: Use template rendering so tintColor applies
+                            //         selectedImage = UIImage(systemName: symbols[i])?.withRenderingMode(.alwaysTemplate)
+                            //     } else {
+                            //         // iOS <26: Use default behavior
+                            //         image = UIImage(systemName: symbols[i])
+                            //         selectedImage = image
+                            //     }
+                            // }
+
                             } else if i < symbols.count && !symbols[i].isEmpty {
-                                // iOS 26+: Use different rendering modes for selected/unselected
+                                let normalSize  = (i < self.currentIconSizes.count) ? self.currentIconSizes[i] : 24.0
+                                let activeSize  = (i < self.currentSelectedIconSizes.count) ? self.currentSelectedIconSizes[i] : 28.0
+                                let normalSymbol   = symbols[i]
+                                let activeSymbol   = (i < self.currentSelectedSymbols.count && !self.currentSelectedSymbols[i].isEmpty)
+                                                    ? self.currentSelectedSymbols[i] : normalSymbol
+
                                 if #available(iOS 26.0, *) {
-                                    // Get current unselected color from tab bar
-                                    let unselTint = self.tabBar?.unselectedItemTintColor
+                                    let normalConfig = UIImage.SymbolConfiguration(pointSize: normalSize, weight: .regular)
+                                    let activeConfig = UIImage.SymbolConfiguration(pointSize: activeSize, weight: .bold)
 
-                                    // Unselected: Only apply custom color if unselectedTint is set
-                                    if let unselTint = unselTint {
-                                        if let originalImage = UIImage(systemName: symbols[i]) {
-                                            image = originalImage.withTintColor(unselTint, renderingMode: .alwaysOriginal)
-                                        }
+                                    if let unselTint = self.tabBar?.unselectedItemTintColor {
+                                        image = UIImage(systemName: normalSymbol, withConfiguration: normalConfig)?
+                                            .withTintColor(unselTint, renderingMode: .alwaysOriginal)
                                     } else {
-                                        // No custom color - use template mode to respect theme
-                                        image = UIImage(systemName: symbols[i])?.withRenderingMode(.alwaysTemplate)
+                                        image = UIImage(systemName: normalSymbol, withConfiguration: normalConfig)?
+                                            .withRenderingMode(.alwaysTemplate)
                                     }
-
-                                    // Selected: Use template rendering so tintColor applies
-                                    selectedImage = UIImage(systemName: symbols[i])?.withRenderingMode(.alwaysTemplate)
+                                    selectedImage = UIImage(systemName: activeSymbol, withConfiguration: activeConfig)?
+                                        .withRenderingMode(.alwaysTemplate)
                                 } else {
-                                    // iOS <26: Use default behavior
-                                    image = UIImage(systemName: symbols[i])
-                                    selectedImage = image
+                                    let normalConfig = UIImage.SymbolConfiguration(pointSize: normalSize, weight: .regular)
+                                    image = UIImage(systemName: normalSymbol, withConfiguration: normalConfig)
+                                    selectedImage = UIImage(systemName: activeSymbol, withConfiguration: normalConfig)
                                 }
                             }
 
@@ -692,21 +764,49 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
                                 selectedImage = image
                             }
                         }
+                    // } else if i < currentSymbols.count && !currentSymbols[i].isEmpty {
+                    //     if #available(iOS 26.0, *) {
+                    //         let unselTint = bar.unselectedItemTintColor
+
+                    //         if let unselTint = unselTint {
+                    //             if let originalImage = UIImage(systemName: currentSymbols[i]) {
+                    //                 image = originalImage.withTintColor(unselTint, renderingMode: .alwaysOriginal)
+                    //             }
+                    //         } else {
+                    //             image = UIImage(systemName: currentSymbols[i])?.withRenderingMode(.alwaysTemplate)
+                    //         }
+                    //         selectedImage = UIImage(systemName: currentSymbols[i])?.withRenderingMode(.alwaysTemplate)
+                    //     } else {
+                    //         image = UIImage(systemName: currentSymbols[i])
+                    //         selectedImage = image
+                    //     }
+                    // }
+
                     } else if i < currentSymbols.count && !currentSymbols[i].isEmpty {
+                        let normalSize  = (i < currentIconSizes.count) ? currentIconSizes[i] : 24.0
+                        let activeSize  = (i < currentSelectedIconSizes.count) ? currentSelectedIconSizes[i] : 28.0
+                        let normalSymbol = currentSymbols[i]
+                        let activeSymbol = (i < currentSelectedSymbols.count && !currentSelectedSymbols[i].isEmpty)
+                                        ? currentSelectedSymbols[i] : normalSymbol
+
                         if #available(iOS 26.0, *) {
+                            let normalConfig = UIImage.SymbolConfiguration(pointSize: normalSize, weight: .regular)
+                            let activeConfig = UIImage.SymbolConfiguration(pointSize: activeSize, weight: .bold)
                             let unselTint = bar.unselectedItemTintColor
 
                             if let unselTint = unselTint {
-                                if let originalImage = UIImage(systemName: currentSymbols[i]) {
-                                    image = originalImage.withTintColor(unselTint, renderingMode: .alwaysOriginal)
-                                }
+                                image = UIImage(systemName: normalSymbol, withConfiguration: normalConfig)?
+                                    .withTintColor(unselTint, renderingMode: .alwaysOriginal)
                             } else {
-                                image = UIImage(systemName: currentSymbols[i])?.withRenderingMode(.alwaysTemplate)
+                                image = UIImage(systemName: normalSymbol, withConfiguration: normalConfig)?
+                                    .withRenderingMode(.alwaysTemplate)
                             }
-                            selectedImage = UIImage(systemName: currentSymbols[i])?.withRenderingMode(.alwaysTemplate)
+                            selectedImage = UIImage(systemName: activeSymbol, withConfiguration: activeConfig)?
+                                .withRenderingMode(.alwaysTemplate)
                         } else {
-                            image = UIImage(systemName: currentSymbols[i])
-                            selectedImage = image
+                            let normalConfig = UIImage.SymbolConfiguration(pointSize: normalSize, weight: .regular)
+                            image = UIImage(systemName: normalSymbol, withConfiguration: normalConfig)
+                            selectedImage = UIImage(systemName: activeSymbol, withConfiguration: normalConfig)
                         }
                     }
 
@@ -730,11 +830,42 @@ class iOS26TabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
 
     func view() -> UIView { container }
 
+    // func tabBar(_ tabBar: UITabBar, didSelect item: UITabBarItem) {
+    //     if let bar = self.tabBar, bar === tabBar, let items = bar.items, let idx = items.firstIndex(of: item) {
+    //         channel.invokeMethod("valueChanged", arguments: ["index": idx])
+    //     }
+    // }
+
     func tabBar(_ tabBar: UITabBar, didSelect item: UITabBarItem) {
-        if let bar = self.tabBar, bar === tabBar, let items = bar.items, let idx = items.firstIndex(of: item) {
+            guard let bar = self.tabBar, bar === tabBar,
+                let items = bar.items,
+                let idx = items.firstIndex(of: item) else { return }
+
+            // Animate the tapped icon inline — no new class needed
+            let tabButtons = tabBar.subviews
+                .filter { String(describing: type(of: $0)).contains("TabBarButton") }
+                .sorted { $0.frame.minX < $1.frame.minX }
+
+            if idx < tabButtons.count,
+            let imageView = tabButtons[idx].subviews.compactMap({ $0 as? UIImageView }).first {
+                // Compress down first, then spring back
+                UIView.animate(withDuration: 0.1, delay: 0, options: .curveEaseIn, animations: {
+                    imageView.transform = CGAffineTransform(scaleX: 0.78, y: 0.78)
+                }) { _ in
+                    let spring = UISpringTimingParameters(
+                        mass: 0.5,
+                        stiffness: 320,
+                        damping: 11,
+                        initialVelocity: CGVector(dx: 0, dy: 8)
+                    )
+                    let animator = UIViewPropertyAnimator(duration: 0.45, timingParameters: spring)
+                    animator.addAnimations { imageView.transform = .identity }
+                    animator.startAnimation()
+                }
+            }
+
             channel.invokeMethod("valueChanged", arguments: ["index": idx])
         }
-    }
 
     private static func colorFromARGB(_ argb: Int) -> UIColor {
         let a = CGFloat((argb >> 24) & 0xFF) / 255.0

@@ -60,6 +60,14 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
   List<String>? _lastSelectedFileIcons;
   List<String>? _lastNetworkIcons;
   List<String>? _lastSelectedNetworkIcons;
+
+  /// new
+  ///
+
+  List<String>? _lastSelectedSymbols;
+  List<double>? _lastIconSizes;
+  List<double>? _lastSelectedIconSizes;
+
   List<int?>? _lastBadgeCounts;
   TabBarMinimizeBehavior? _lastMinimizeBehavior;
   bool? _lastHidden;
@@ -166,6 +174,16 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
       .map((e) => _extractNetworkUrl(e.selectedIcon ?? e.icon))
       .toList();
 
+  List<String> _mapSelectedSymbols() => widget.destinations
+      .map((e) => _extractSymbol(e.selectedIcon ?? e.icon))
+      .toList();
+
+  List<double> _mapIconSizes() =>
+      widget.destinations.map((e) => e.iconSize).toList();
+
+  List<double> _mapSelectedIconSizes() =>
+      widget.destinations.map((e) => e.selectedIconSize).toList();
+
   @override
   Widget build(BuildContext context) {
     if (!kIsWeb && Platform.isIOS) {
@@ -187,6 +205,12 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
       final creationParams = <String, dynamic>{
         'labels': labels,
         'sfSymbols': symbols,
+
+        /// new
+        ///
+        'selectedSfSymbols': _mapSelectedSymbols(), // NEW
+        'iconSizes': _mapIconSizes(), // NEW
+        'selectedIconSizes': _mapSelectedIconSizes(), // NEW
         'assetIcons': assetIcons,
         'selectedAssetIcons': selectedAssetIcons,
         'fileIcons': fileIcons,
@@ -355,9 +379,15 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
         _lastNetworkIcons?.join('|') != networkIcons.join('|') ||
         _lastSelectedNetworkIcons?.join('|') !=
             selectedNetworkIcons.join('|')) {
+      final selectedSymbols = _mapSelectedSymbols();
+      final iconSizes = _mapIconSizes();
+      final selectedIconSizes = _mapSelectedIconSizes();
       await ch.invokeMethod('setItems', {
         'labels': labels,
         'sfSymbols': symbols,
+        'selectedSfSymbols': selectedSymbols, // NEW
+        'iconSizes': iconSizes, // NEW
+        'selectedIconSizes': selectedIconSizes, // NEW
         'assetIcons': assetIcons,
         'selectedAssetIcons': selectedAssetIcons,
         'fileIcons': fileIcons,
@@ -370,6 +400,9 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
       });
       _lastLabels = labels;
       _lastSymbols = symbols;
+      _lastSelectedSymbols = selectedSymbols; // NEW
+      _lastIconSizes = iconSizes; // NEW
+      _lastSelectedIconSizes = selectedIconSizes; // NEW
       _lastAssetIcons = assetIcons;
       _lastSelectedAssetIcons = selectedAssetIcons;
       _lastFileIcons = fileIcons;
@@ -425,6 +458,9 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
   void _cacheItems() {
     _lastLabels = widget.destinations.map((e) => e.label).toList();
     _lastSymbols = _mapSymbols();
+    _lastSelectedSymbols = _mapSelectedSymbols(); // NEW
+    _lastIconSizes = _mapIconSizes(); // NEW
+    _lastSelectedIconSizes = _mapSelectedIconSizes(); // NEW
     _lastAssetIcons = _mapAssetIcons();
     _lastSelectedAssetIcons = _mapSelectedAssetIcons();
     _lastFileIcons = _mapFileIcons();
@@ -473,6 +509,9 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
       await ch.invokeMethod('setItems', {
         'labels': labels,
         'sfSymbols': symbols,
+        'selectedSfSymbols': _mapSelectedSymbols(), // NEW
+        'iconSizes': _mapIconSizes(), // NEW
+        'selectedIconSizes': _mapSelectedIconSizes(), // NEW
         'assetIcons': assetIcons,
         'selectedAssetIcons': selectedAssetIcons,
         'fileIcons': fileIcons,
@@ -498,7 +537,9 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
         await ch.invokeMethod('setStyle', style);
       }
 
-      await ch.invokeMethod('setSelectedIndex', {'index': widget.selectedIndex});
+      await ch.invokeMethod('setSelectedIndex', {
+        'index': widget.selectedIndex,
+      });
       _lastIndex = widget.selectedIndex;
       await _requestIntrinsicSize();
     } catch (_) {}

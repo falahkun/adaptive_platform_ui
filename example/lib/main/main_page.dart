@@ -33,13 +33,18 @@ class _MainPageState extends State<MainPage> {
                   onTap: (index) => onDestinationSelected(index, context),
                   items: [
                     AdaptiveNavigationDestination(
+                      iconSize: 15,
+                      selectedIconSize: 15,
+
                       icon: PlatformInfo.isIOS26OrHigher()
-                          ? "house.fill"
+                          ? "house"
                           : PlatformInfo.isIOS
                           ? CupertinoIcons.home
                           : Icons.home_outlined,
 
-                      selectedIcon: PlatformInfo.isIOS
+                      selectedIcon: PlatformInfo.isIOS26OrHigher()
+                          ? "house.fill"
+                          : PlatformInfo.isIOS
                           ? CupertinoIcons.home
                           : Icons.home,
                       label: 'Home',
@@ -57,11 +62,19 @@ class _MainPageState extends State<MainPage> {
                       label: 'Info',
                     ),
 
-                    const AdaptiveNavigationDestination(
-                      icon: NetworkImage('https://i.pravatar.cc/100'),
+                    AdaptiveNavigationDestination(
+                      iconSize: 15,
+                      selectedIconSize: 15,
+                      icon: PlatformInfo.isIOS26OrHigher()
+                          ? "info.circle"
+                          : PlatformInfo.isIOS
+                          ? CupertinoIcons.info
+                          : Icons.info_outline,
+                      selectedIcon: NetworkImage('https://i.pravatar.cc/100'),
                       label: 'Profile',
                     ),
                     AdaptiveNavigationDestination(
+                      iconSize: 12,
                       icon: PlatformInfo.isIOS26OrHigher()
                           ? "magnifyingglass"
                           : PlatformInfo.isIOS

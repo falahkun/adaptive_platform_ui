@@ -15,6 +15,9 @@ class AdaptiveNavigationDestination {
     required this.icon,
     required this.label,
     this.selectedIcon,
+    this.iconSize = 15.0, // NEW — default 15pt
+    this.selectedIconSize = 15.0, // NEW — default 15pt
+
     this.isSearch = false,
     this.badgeCount,
     this.addSpacerAfter = false,
@@ -48,6 +51,9 @@ class AdaptiveNavigationDestination {
   /// Useful for creating grouped tabs (e.g., left group and right group)
   /// Only applies to iOS 26+ native tab bar
   final bool addSpacerAfter;
+
+  final double iconSize; // NEW — unselected icon point size
+  final double selectedIconSize; // NEW — selected icon point size
 }
 
 /// Tab bar minimize behavior for iOS 26+
